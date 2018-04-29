@@ -12,14 +12,16 @@ The high-level architecture of the built FCN looks like
 | Encoder 2 | 256 | 40x40x256 |
 | Encoder 3 | 512 | 20x20x512 |
 | 1x1 Convolution | 512 | 20x20x512 |
-| Decoder 1 | 512 | 40x40x256 | 
-| Decoder 2 | 256 | 80x80x64 |
+| Decoder 1 | 512 | 40x40x512 | 
+| Decoder 2 | 256 | 80x80x256 |
 | Decoder 3 | 64 | 160x160x64 |
 | Conv2D Output | 3 | 160x160x3 |
 
 The depth of 3 for the input layer corresponds to the RGB color scheme - 1 value for each of the color components. The depth of 3 for the output layer corresponds to the number of classes we recognize in this neural network - target human, other human, everything else.
 
-The number of encoder and decoder layers as well as the number of filters chosen within each layer was partially determined by the memory limitations of the machine used for training. It was not possible in my environment to exceed 512 filters. Nor was it possible to exceed three encoder / decoder layers given the use of two layers within each encoding / decoding layer as noted below. In general, I tried to maximize the number of filters available given the memory constraints. Here's an overall view of the architecture.
+The number of encoder and decoder layers as well as the number of filters chosen within each layer was partially determined by the memory limitations of the machine used for training. It was not possible in my environment to exceed 512 filters. Nor was it possible to exceed three encoder / decoder layers given the use of two layers within each encoding / decoding layer as noted below. In general, I tried to maximize the number of filters available given the memory constraints. 
+
+The 1x1 convolutional layer in this case serves to add nonlinearity to the learned function as the number of filters is the same as the input. 
 
 [image_0]: ./fcnarch.png
 ![Figure 1: Fully Convolutional Network Architecture][image_0] 
@@ -45,6 +47,9 @@ The decoder layer combines the inputs from the previous layer with the outputs o
 | Batch Normalization | |
 | Conv2D | 1 |
 | Batch Normalization | |
+
+## Training Data Collection
+I constructed a variety of scenes within the simulation with the target hero, non-target humans, varying backgrounds, and varying elevation of the quad. I generally tried to collect at least 500 images from each camera for a given scene, sometimes as many as several thousand from each camera. From this raw data set, I downsampled to force mostly images with the target hero. For example, given a data set I would target that 80% of the resulting images had the hero. The remaining 20% of images would be randomly selected from the other images. After preprocessing, I used the sklearn train_test_split function to randomly allocate 80% of these images to training and 20% to validation. The end result after preprocessing was that I added ~4800 images to the training data set and ~1300 images to the validation data set. 
 
 ## Hyperparameter Selection
 The overall method of hyperparameter selection was brute force and the end result was:
@@ -89,8 +94,22 @@ The table below shows the specific training and validation losses for each train
 | 14 | 0.017 | 0.024 |
 | 15 | 0.016 | 0.021 |
 
-##Limitations
-The developed model is only valid for differentiating three object types - target human, other human, and everything else. The encoding layers could be reimplemented as VGG16 or another predefined model in 
+## Results
+IoU and evaluation results are shown in the table below
+
+| Test Name | True Positives | False Positives | False Negatives | IoU Background | IoU Other People | IoU Hero |
+| ------------- |:-----------------:|:--------------:|:---------------:|:--------------:|:--------------:|:-----------------:|
+| Following | 539 | 0 | 0 | 0.996 | 0.360 | 0.887 |
+| Non-Visible | 0 | 18 | 0 | 0.989 | 0.781 | 0.0 |
+| Visible | 131 | 2 | 170 | 0.997 | 0.441 | 0.245 |
+
+The final score calculated from these intermediate results was** 0.441**.
+
+## Experimentation
+The quadcopter successfully found the hero however the inference engine appears to have run too slowly on my host (no gpu). The result was stalls in the quad and the textual output of the inference processing reporting the target found followed by target lost.
+
+## Limitations
+The developed model is only valid for differentiating three object types - target human, other human, and everything else. It seems that it should be possible to use a pre-trained inception/resnet/vgg16 model on the CIFAR1000 dataset and use that as part of the segmentation process. 
 
 
 
