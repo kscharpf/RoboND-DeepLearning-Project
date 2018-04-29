@@ -9,6 +9,7 @@ import math
 import numpy as np
 from scipy import misc
 
+# Source derived from @royveshovda source code posted into slack
 
 def get_cam3_files(files):
     is_cam3 = lambda x: x.find('cam3_') != -1

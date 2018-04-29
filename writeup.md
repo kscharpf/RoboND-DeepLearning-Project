@@ -1,4 +1,4 @@
-#Udacity Robotics Term 1 Deep Learning Project
+# Udacity Robotics Term 1 Deep Learning Project
 ## Neural Network Architecture
 This specification for this project is a fully convolutional network (FCN) with some number of encoding and decoding layers. The encoding layers are separable convolutional blocks. 
 
@@ -49,7 +49,7 @@ The decoder layer combines the inputs from the previous layer with the outputs o
 | Batch Normalization | |
 
 ## Training Data Collection
-I constructed a variety of scenes within the simulation with the target hero, non-target humans, varying backgrounds, and varying elevation of the quad. I generally tried to collect at least 500 images from each camera for a given scene, sometimes as many as several thousand from each camera. From this raw data set, I downsampled to force mostly images with the target hero. For example, given a data set I would target that 80% of the resulting images had the hero. The remaining 20% of images would be randomly selected from the other images. After preprocessing, I used the sklearn train_test_split function to randomly allocate 80% of these images to training and 20% to validation. The end result after preprocessing was that I added ~4800 images to the training data set and ~1300 images to the validation data set. 
+I constructed a variety of scenes within the simulation with the target hero, non-target humans, varying backgrounds, and varying elevation of the quad. I generally tried to collect at least 500 images from each camera for a given scene, sometimes as many as several thousand from each camera. From this raw data set, I downsampled to force mostly images with the target hero. For example, given a data set I would target that 80% of the resulting images had the hero. The remaining 20% of images would be randomly selected from the other images. After preprocessing, I used the sklearn train_test_split function to randomly allocate 80% of these images to training and 20% to validation. The end result after preprocessing was that I added ~4800 images to the training data set and ~1300 images to the validation data set. The additional source code files to assist with the data preparation process are preserve_target_ratio.py and split_train.py.
 
 ## Hyperparameter Selection
 The overall method of hyperparameter selection was brute force and the end result was:
@@ -104,6 +104,9 @@ IoU and evaluation results are shown in the table below
 | Visible | 131 | 2 | 170 | 0.997 | 0.441 | 0.245 |
 
 The final score calculated from these intermediate results was** 0.441**.
+
+## Model
+The model is located in data/weights/model_weights.h5 and data/weights/config_model_weights.h5.
 
 ## Experimentation
 The quadcopter successfully found the hero however the inference engine appears to have run too slowly on my host (no gpu). The result was stalls in the quad and the textual output of the inference processing reporting the target found followed by target lost.
