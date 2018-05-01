@@ -1,27 +1,38 @@
 # Udacity Robotics Term 1 Deep Learning Project
-## Neural Network Architecture
-This specification for this project is a fully convolutional network (FCN) with some number of encoding and decoding layers. The encoding layers are separable convolutional blocks. 
+## Specification
+This specification for this project is a fully convolutional network (FCN). This network will be trained to segment an input image into three classes - identified by distinct colors - target human, other human, and other. 
+
+## FCN Discussion
+Convolutional Neural Networks (CNNs) have had great success building image classifiers. That is, given an input image and a label defining the class for that image, the CNN is trained to predict the label for a new image. The layers of the CNN get progressively deeper, increasing number of filters, and at each layer the CNN learns progressively larger abstract concepts within the image. At the lowest level, for example, the CNN may be learning to recognize features such as lines while at the highest level the CNN learns things like faces. These layers are referred to as encoders.
+
+The CNN is successful for image classification but the task here is for a real-time segmentation of the image. One way to consider this task is that we will do a simultaneous classification of each pixel in the image. A conventional approach of a CNN is to add some number of fully connected (dense) layers after the encoders and it is from those fully connected layers that we end at some number of class labels. Using a fully connected layer for each pixel would produce a network with so many parameters as to be untrainable. This is where the FCN comes to the rescue.
+
+The desired output is an image consisting of three colors where each pixel is colored based upon the class of that pixel. The desire is to learn to build such an image from the abstract features of the scene that were learned in the encoding layers. This operation is the inverse of the encoding layers where the depth of the image progressively increased while the height and width progressively decreased. These layers are, appropriately, the decoders or deconvolutional layers. At the top of the decoder layers is a convolutional layer with 3 filters - one for each of the output clases using a kernel size of 1 and a stride of 1 as each pixel is written individually.
+
+One issue with producing a dense output image is the potential for loss of information that is vital to production of the output image. This issue is common when the sole input to a given decoder layer is the output of the preceding layer. In the as-built FCN, we try to mitigate the impact of this issue by adding skip connections. Each decoding layer takes as input the output of the previous decoding layer as well as the output of one of the encoding layers.
+
+Together we have an encoder-decoder architecture that effectively serves to translate an image into an alternate representation of that image that reflects knowledge learned from training. An encoder-decoder architecture may tend to be very deep with a large number of learned parameters. This can be problematic for training and could be disastrous for inference in a real-time environment such as the quadcopter. 
+
+Connecting the encoding layers with the decoding layers is a 1x1 convolutional layer. That layer provides the simliar features to a fully connected layer but spatial information is preserved. In the case of the as-built FCN, we retain the 4D tensor with depth 512. This contrasts to a fully connected layer which would result in a 2D tensor. The 1x1 convolution allows for the translation from one shape to another allowing us to take a pretrained encoder and use that in our network with ease.
 
 ### High Level Architecture
 The high-level architecture of the built FCN looks like
 
-| Layer | Filters | Output Shape |
-| -------- |:----------:|:------------------:|
-| Input | N/A  | 160x160x3  |
-| Encoder 1 | 64 | 80x80x64 |
-| Encoder 2 | 256 | 40x40x256 |
-| Encoder 3 | 512 | 20x20x512 |
-| 1x1 Convolution | 512 | 20x20x512 |
-| Decoder 1 | 512 | 40x40x512 | 
-| Decoder 2 | 256 | 80x80x256 |
-| Decoder 3 | 64 | 160x160x64 |
-| Conv2D Output | 3 | 160x160x3 |
+| Layer | Filters | Kernel | Strides | Output Shape |
+| -------- |:----------:|:------|:---------|:------------------:|
+| Input | N/A  | N/A | N/A | 160x160x3  |
+| Encoder 1 | 64 | 3x3 | 2 | 80x80x64 |
+| Encoder 2 | 256 | 3x3 | 2 | 40x40x256 |
+| Encoder 3 | 512 | 3x3 | 2 | 20x20x512 |
+| 1x1 Convolution | 1x1 | 512 | 1 | 20x20x512 |
+| Decoder 1 | 512 | 3x3 | 1 | 40x40x512 | 
+| Decoder 2 | 256 | 3x3 | 1 | 80x80x256 |
+| Decoder 3 | 64 | 3x3 | 1 | 160x160x64 |
+| Conv2D Output | 3 | 1x1 | 1 | 160x160x3 |
 
 The depth of 3 for the input layer corresponds to the RGB color scheme - 1 value for each of the color components. The depth of 3 for the output layer corresponds to the number of classes we recognize in this neural network - target human, other human, everything else.
 
 The number of encoder and decoder layers as well as the number of filters chosen within each layer was partially determined by the memory limitations of the machine used for training. It was not possible in my environment to exceed 512 filters. Nor was it possible to exceed three encoder / decoder layers given the use of two layers within each encoding / decoding layer as noted below. In general, I tried to maximize the number of filters available given the memory constraints. 
-
-The 1x1 convolutional layer in this case serves to add nonlinearity to the learned function as the number of filters is the same as the input. 
 
 [image_0]: ./fcnarch.png
 ![Figure 1: Fully Convolutional Network Architecture][image_0] 
@@ -105,6 +116,10 @@ IoU and evaluation results are shown in the table below
 
 The final score calculated from these intermediate results was** 0.441**.
 
+We can see the effectiveness of the prediction model in the figure below:
+[image_2]: ./evaluation1.png
+![Figure 3: Example of Predicted Segmentation][image_2]
+
 ## Model
 The model is located in data/weights/model_weights.h5 and data/weights/config_model_weights.h5.
 
@@ -113,6 +128,9 @@ The quadcopter successfully found the hero however the inference engine appears 
 
 ## Limitations
 The developed model is only valid for differentiating three object types - target human, other human, and everything else. It seems that it should be possible to use a pre-trained inception/resnet/vgg16 model on the CIFAR1000 dataset and use that as part of the segmentation process. 
+
+## Future Work
+There are multiple techniques available to improve the results of this network. As noted in the limitations, the current network only segments three classes. It would be useful for the network to segment many more classes. For example, the ability to identify obstacles likely in the way of the flight path versus the road. One approach widely used is transfer learning where we could use a pretrained model such as VGG16 to provide many of the layers required. A second technique that would be good to explore is to execute the inference within C++ rather than python to hopefully bring the image processing. A third item to consider is whether this model is over-parameterized. If the model can be simplified in any fashion, inference will be faster and therefore more suitable to a real-time environment.
 
 
 
